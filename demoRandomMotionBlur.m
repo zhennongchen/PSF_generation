@@ -28,7 +28,7 @@ clc
 
 do_show = 1;
 % gray or color image
-process_color = 1;
+process_color = 0;
 
 % trajectory curve parameters
 PSFsize = 64;

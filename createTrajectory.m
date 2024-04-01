@@ -1,6 +1,6 @@
-function TrajCurve = createTrajectory(TrajSize, anxiety, numT, MaxTotalLength, do_show)
+function TrajCurve = createTrajectory(PSFsize, anxiety, numT, MaxTotalLength, do_show)
 %
-% function TrajCurve = createTrajectory(TrajSize, anxiety, numT, MaxTotalLength, do_show)
+% function TrajCurve = createTrajectory(PSFsize, anxiety, numT, MaxTotalLength, do_show)
 %
 % Generates a variety of random motion trajectories in continuous domain as in [Boracchi and Foi 2012].
 % Each trajectory consists of a complex-valued vector determining the discrete positions of 
@@ -14,7 +14,7 @@ function TrajCurve = createTrajectory(TrajSize, anxiety, numT, MaxTotalLength, d
 % Rectilinear Blur as in [Boracchi and Foi 2011] can be obtained by setting anxiety to 0 (when no impulsive changes occurs)
 %
 % input description
-% TrajSize                   size (in pixels) of the square support of the Trajectory curve
+% PSFsize                 size (in pixels) of the square support of the Trajectory curve
 % anxiety                    parameter determining the amount of shake (in the range [0,1] 0 corresponds to rectilinear
 %                                 trajectories). This term scales the random vector that is added at each sample.
 % numT                      number of samples where the Trajectory is sampled
@@ -32,7 +32,7 @@ function TrajCurve = createTrajectory(TrajSize, anxiety, numT, MaxTotalLength, d
 %
 % Usage
 % TrajCurve = createTrajectory() use default parameters
-% TrajCurve = createTrajectory(TrajSize, anxiety, numT, MaxTotalLength, do_show) set all the parameters
+% TrajCurve = createTrajectory(PSFsize, anxiety, numT, MaxTotalLength, do_show) set all the parameters
 % 
 % it is possible to plot the  motion trajectory using plot(TrajCurve.x) 
 % motion blur PSF can be obtained by sampling these trajectories using createPSFs function
@@ -60,7 +60,7 @@ function TrajCurve = createTrajectory(TrajSize, anxiety, numT, MaxTotalLength, d
 % **Tampere University of Technology
 
 if nargin<1
-    TrajSize=64;
+    PSFsize=64;
 end
 
 if nargin<2
@@ -92,7 +92,7 @@ centripetal = 0.7 * rand(1);
 gaussianTerm =10 * rand(1);
 
 % probability of having a big shake, e.g. due to pressing camera button or abrupt hand movements 
-freqBigShakes = 0.2 * rand(1);
+freqBigShakes = 0;%0.2 * rand(1);
 
 %% Generate x(t), Discrete Random Motion Trajectory  in Continuous Domain 
 
@@ -149,31 +149,31 @@ for t = 1 : numT - 1
 
 end
 
-%% compute Trajectory Statistics
-if do_compute_curvature
-    window_size=1+2*ceil(MaxTotalLength/(numT-1)/2);
-    xrsmooth=conv2([repmat(x(1),[(window_size-1)/2 1]);x;repmat(x(end),[(window_size-1)/2 1])],ones(window_size,1)/window_size,'valid');
-
-    TotCurvatureSmooth=0;
-    CumultiveCurvatureSmooth=[];
-
-    for t=2:floor(numel(xrsmooth)/window_size-1);
-        TotCurvatureSmooth = TotCurvatureSmooth+ ComputeCurvature([real(xrsmooth(window_size*(t+1))),imag(xrsmooth(window_size*(t+1)))],[real(xrsmooth(window_size*(t))),imag(xrsmooth(window_size*(t)))],[real(xrsmooth(window_size*(t-1))),imag(xrsmooth(window_size*(t-1)))]);
-        CumultiveCurvatureSmooth(t)=TotCurvatureSmooth;
-    end
-
-    TotCurvatureFitted=0;
-    nFittingSamples=10; % samples a dx e a sx da fittare
-    CumulativeCurvatureFitted=[];
-
-    %calcola la curvatura con il fitting della parabola su  2*nFittingSamples+1
-    %samples, utilizzando il suggerimento degli israeliti
-    for t=nFittingSamples + 1 :numT-nFittingSamples;
-        pts=[real(x(t-nFittingSamples:t+nFittingSamples))';imag(x(t-nFittingSamples: t+nFittingSamples))'];
-        TotCurvatureFitted = TotCurvatureFitted+ ComputeCurvatureFitting(pts);
-        CumulativeCurvatureFitted(t)=TotCurvatureFitted;
-    end
-end
+% %% compute Trajectory Statistics
+% if do_compute_curvature
+%     window_size=1+2*ceil(MaxTotalLength/(numT-1)/2);
+%     xrsmooth=conv2([repmat(x(1),[(window_size-1)/2 1]);x;repmat(x(end),[(window_size-1)/2 1])],ones(window_size,1)/window_size,'valid');
+% 
+%     TotCurvatureSmooth=0;
+%     CumultiveCurvatureSmooth=[];
+% 
+%     for t=2:floor(numel(xrsmooth)/window_size-1);
+%         TotCurvatureSmooth = TotCurvatureSmooth+ ComputeCurvature([real(xrsmooth(window_size*(t+1))),imag(xrsmooth(window_size*(t+1)))],[real(xrsmooth(window_size*(t))),imag(xrsmooth(window_size*(t)))],[real(xrsmooth(window_size*(t-1))),imag(xrsmooth(window_size*(t-1)))]);
+%         CumultiveCurvatureSmooth(t)=TotCurvatureSmooth;
+%     end
+% 
+%     TotCurvatureFitted=0;
+%     nFittingSamples=10; % samples a dx e a sx da fittare
+%     CumulativeCurvatureFitted=[];
+% 
+%     %calcola la curvatura con il fitting della parabola su  2*nFittingSamples+1
+%     %samples, utilizzando il suggerimento degli israeliti
+%     for t=nFittingSamples + 1 :numT-nFittingSamples;
+%         pts=[real(x(t-nFittingSamples:t+nFittingSamples))';imag(x(t-nFittingSamples: t+nFittingSamples))'];
+%         TotCurvatureFitted = TotCurvatureFitted+ ComputeCurvatureFitting(pts);
+%         CumulativeCurvatureFitted(t)=TotCurvatureFitted;
+%     end
+% end
 
 %% Center the Trajectory 
 
@@ -182,7 +182,7 @@ x = x - 1i * min(imag(x))-min(real(x));
 
 % Center the Trajectory
 x = x - 1i * rem(imag(x(1)), 1) - rem(real(x(1)), 1) + 1 + 1i;
-x = x + 1i * ceil((TrajSize - max(imag(x))) / 2) + ceil((TrajSize - max(real(x))) / 2);
+x = x + 1i * ceil((PSFsize - max(imag(x))) / 2) + ceil((PSFsize - max(real(x))) / 2);
 
 if do_show
     figure(455),
@@ -190,7 +190,7 @@ if do_show
     plot(x),hold on
     plot(x(1),'rx');
     plot(x(end),'ro');
-    axis([0 TrajSize 0 TrajSize])
+    axis([0 PSFsize 0 PSFsize])
     legend('Traj Curve', 'init' , 'end');
     %         square tight
     hold off
@@ -206,11 +206,11 @@ TrajCurve.TotCurvature = TotCurvature;
 TrajCurve.Anxiety = anxiety;
 TrajCurve.MaxTotalLength = MaxTotalLength;
 TrajCurve.nAbruptShakes = abruptShakesCounter;
-
-if do_compute_curvature
-    TrajCurve.TotCurvatureSmooth=TotCurvatureSmooth/numT;
-    TrajCurve.CumultiveCurvatureSmooth=CumultiveCurvatureSmooth/numT;
-    TrajCurve.TotCurvatureFitted=TotCurvatureFitted/numT;
-    TrajCurve.CumultiveCurvatureFitted=CumulativeCurvatureFitted/numT;
-end
+% 
+% if do_compute_curvature
+%     TrajCurve.TotCurvatureSmooth=TotCurvatureSmooth/numT;
+%     TrajCurve.CumultiveCurvatureSmooth=CumultiveCurvatureSmooth/numT;
+%     TrajCurve.TotCurvatureFitted=TotCurvatureFitted/numT;
+%     TrajCurve.CumultiveCurvatureFitted=CumulativeCurvatureFitted/numT;
+% end
 

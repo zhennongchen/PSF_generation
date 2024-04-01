@@ -7,7 +7,7 @@ function PSFS = createPSFs(TrajCurve , PSFsize , T , do_show , do_center)
 %
 % input description
 % TrajCurve                 Motion Blur trajectory cuve, provided by createTrajectory function
-% PSFsize                     Size of the PFS where the TrajCurve is sampled
+% PSFsize                     Size of the PSF where the TrajCurve is sampled
 % T                                Vector of exposure times: for each of them a PSF will be generated
 % do_show
 % do_center
@@ -92,7 +92,7 @@ for jj = 1:numel(T)
         prevT = T(jj - 1);
     end
     % sample the trajectory until time T
-    for t = 1 : numel(x); %floor(prevT):ceil(T(jj))
+    for t = 1 : numel(x) %floor(prevT):ceil(T(jj))
         if (T(jj) * numt >= t) && (prevT * numt < t - 1);
             t_proportion = 1;
         elseif (T(jj) * numt >= t - 1) && (prevT * numt < t - 1);
