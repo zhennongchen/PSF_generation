@@ -236,6 +236,8 @@ def create_random_ROI(original_image, radius_range, center_of_mass = None, plot_
     new_points = splev(np.linspace(0, 1, 1000), tck)
     smooth_mask = polygon2mask(image_shape, np.array(new_points).T)
 
+    # constrain the mask to the original image >0
+    smooth_mask[original_image == 0] = 0
 
     if plot_ROI:
         img_binary = np.zeros_like(original_image)
