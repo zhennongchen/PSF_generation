@@ -1,7 +1,9 @@
 import os
 import numpy as np
 import cv2
+import glob
 import matplotlib.pyplot as plt
+from PIL import Image
 
 from skimage.draw import polygon
 from scipy.spatial import ConvexHull
@@ -253,3 +255,50 @@ def create_random_ROI(original_image, radius_range, center_of_mass = None, plot_
 def make_folder(folder_list):
     for i in folder_list:
         os.makedirs(i,exist_ok = True)
+
+# function: find all files under the name * in the main folder, put them into a file list
+def find_all_target_files(target_file_name,main_folder):
+    F = np.array([])
+    for i in target_file_name:
+        f = np.array(sorted(glob.glob(os.path.join(main_folder, os.path.normpath(i)))))
+        F = np.concatenate((F,f))
+    return F
+
+
+# Dice calculation
+def np_categorical_dice(pred, truth, target_class, exclude_class = None):
+    if exclude_class is not None:
+        valid_mask = (truth != exclude_class)
+        pred = pred * valid_mask
+        truth = truth * valid_mask
+
+    """ Dice overlap metric for label k """
+    A = (pred == target_class).astype(np.float32)
+    B = (truth == target_class).astype(np.float32)
+    return (2 * np.sum(A * B) + 1e-8) / (np.sum(A) + np.sum(B) + 1e-8)
+
+# function: set window level
+def set_window(image,level,width):
+    if len(image.shape) == 3:
+        image = image.reshape(image.shape[0],image.shape[1])
+    new = np.copy(image)
+    high = level + width // 2
+    low = level - width // 2
+    # normalize
+    unit = (1-0) / (width)
+    new[new>high] = high
+    new[new<low] = low
+    new = (new - low) * unit 
+    return new
+
+# function: save grayscale image
+def save_grayscale_image(a,save_path,normalize = True, WL = 50, WW = 100):
+    I = np.zeros((a.shape[0],a.shape[1],3))
+    # normalize
+    if normalize == True:
+        a = set_window(a, WL, WW)
+
+    for i in range(0,3):
+        I[:,:,i] = a
+    
+    Image.fromarray((I*255).astype('uint8')).save(save_path)

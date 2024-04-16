@@ -15,31 +15,33 @@ from scipy.spatial import ConvexHull
 from scipy.interpolate import interp1d
 from scipy.interpolate import splev, splprep
 import random
+import nrrd
 
 import PSF_generation.python.functions as ff
 
 # parameters
-PSFsize_list = [[35,35],[64,64]]
+PSFsize_list = [[15,15],[22,22],[23,23], [35,35]]
 anxiety = 0.05
 numT = 2000
 limited_displacement_list = [1.0, 1.5]
-MaxTotalLength_range = [20,100]
-ROI_frequency = 0.4
+MaxTotalLength_range = [14.9,15]
+ROI_frequency = 0
 
 
-sheet = '/mnt/BPM_NAS/cleaned_labels/20240406_blur/all/Blur.csv'
+sheet = '/mnt/BPM_NAS/BPM/alldata/phase3_ge_origin/darwin/cleaned_labels/20240406_blur/all/Blur.csv'
 sheet = pd.read_csv(sheet)
 # only keep the one without blur
-sheet = sheet[(sheet['Blur'] == 0) & (sheet['Exclude'] ==0)]
+# sheet = sheet[(sheet['Blur'] == 1) & (sheet['Exclude'] ==0)]
+sheet = sheet[(sheet['Image'] == '2d_proc_sd.01033.rmlo.dcm')]
 print('Number of images:', sheet.shape[0])
 
 # for simulation
 result = []
-for index in range(0, sheet.shape[0]):
+for index in range(0, 1):#sheet.shape[0]):
     patient = sheet.iloc[index]
     patient_image_name = patient['Image']
     print('this file name is: ', patient_image_name)
-    patient_file = os.path.join('/mnt/BPM_NAS', patient['Folder'], 'data_lut', patient_image_name)
+    patient_file = os.path.join('/mnt/BPM_NAS/BPM/alldata/phase3_ge_origin/darwin', patient['Folder'], 'data_lut', patient_image_name)
 
     dicom_image = pydicom.dcmread(patient_file)
 
@@ -55,11 +57,11 @@ for index in range(0, sheet.shape[0]):
     center_of_mass = ndimage.measurements.center_of_mass(img > 0)
     center_of_mass = [int(center_of_mass[0]), int(center_of_mass[1])]
 
-    save_folder_main = os.path.join('/mnt/BPM_NAS/simulations', patient_image_name)
+    save_folder_main = os.path.join('/mnt/BPM_NAS/BPM/alldata/phase3_ge_origin/darwin/simulations_v2', patient_image_name)
     ff.make_folder([save_folder_main])
 
     # create simulations
-    for random_i in range(0,4):
+    for random_i in range(3,4):
 
         ROI_use = False
 
@@ -138,7 +140,7 @@ for index in range(0, sheet.shape[0]):
         result.append([patient['Image'], random_i, ROI_use, PSFsize[0], limited_displacement * pixel_spacing[0], MaxTotalLength * pixel_spacing[0], patient['Blur'], patient['Agree'], patient['PoorQuality'],patient['AdjuDisagree'], patient['Folder'], patient['MRN'], patient['SegFilename'], patient['Dataset']])
 
         df = pd.DataFrame(result, columns = ['Image', 'simulation', 'use_ROI?', 'PSFsize', 'limited_displacement(mm)', 'MaxTotalLength(mm)', 'Blur_in_original_image', 'Agree', 'PoorQuality', 'AdjuDisagree', 'Folder', 'MRN', 'SegFilename', 'Dataset'])
-        df.to_excel(os.path.join(os.path.dirname(save_folder_main), 'simulation_info.xlsx'), index = False)
+        df.to_excel(os.path.join(os.path.dirname(save_folder_main), 'simulation_info_random.xlsx'), index = False)
 
 
 # for blur: jus read dicom and save as nii
@@ -147,7 +149,8 @@ for index in range(0, sheet.shape[0]):
 #     patient = sheet.iloc[index]
 #     patient_image_name = patient['Image']
 #     print('this file name is: ', patient_image_name)
-#     patient_file = os.path.join('/mnt/BPM_NAS', patient['Folder'], 'data_lut', patient_image_name)
+#     print('patient folder:', patient['Folder'] )
+#     patient_file = os.path.join('/mnt/BPM_NAS/BPM/alldata/phase3_ge_origin/darwin', patient['Folder'], 'data_lut', patient_image_name)
 
 #     dicom_image = pydicom.dcmread(patient_file)
 
@@ -163,59 +166,20 @@ for index in range(0, sheet.shape[0]):
 #     center_of_mass = ndimage.measurements.center_of_mass(img > 0)
 #     center_of_mass = [int(center_of_mass[0]), int(center_of_mass[1])]
 
-#     save_folder = os.path.join('/mnt/BPM_NAS/real_blurs', patient_image_name, 'original_img')
+#     save_folder = os.path.join('/mnt/BPM_NAS/BPM/alldata/phase3_ge_origin/darwin/real_blurs', patient_image_name)
 #     ff.make_folder([os.path.dirname(save_folder), save_folder])
 
 #     if os.path.isfile(os.path.join(save_folder, 'img.nii.gz')) == 0:
 #         nb.save(nb.Nifti1Image(img, np.eye(4)), os.path.join(save_folder, 'img.nii.gz'))
 
+#     seg = os.path.join('/mnt/BPM_NAS/BPM/alldata/phase3_ge_origin/darwin', patient['Folder'], 'seg_blur', patient_image_name + '.Janice.seg.nrrd')
+#     seg, _ = nrrd.read(seg)
+#     seg = np.transpose(seg, (1, 0))
+#     seg[img<=0] = 0
+#     print('the shape of image and seg:', seg.shape, img.shape)
+#     nb.save(nb.Nifti1Image(seg, np.eye(4)), os.path.join(save_folder, 'seg.nii.gz'))
+
 #     result.append([patient['Image'],  patient['Blur'], patient['Agree'], patient['PoorQuality'],patient['AdjuDisagree'], patient['Folder'], patient['MRN'], patient['SegFilename'], patient['Dataset']])
 
-#     df = pd.DataFrame(result, columns = ['Image', 'Blur_in_original_image', 'Agree', 'PoorQuality', 'AdjuDisagree', 'Folder', 'MRN', 'SegFilename', 'Dataset'])
-#     df.to_excel(os.path.join(os.path.dirname(os.path.dirname(save_folder)), 'blur_info.xlsx'), index = False)
-
-
-# To correct the simulation: set the ROI in the region of breast,smooth the ROI boundary, round the value, make sure the background is 0
-# for index in range(0, 1):#sheet.shape[0]):
-#     patient = sheet.iloc[index]
-#     patient_image_name = patient['Image']
-#     print(patient_image_name)
-
-#     original_img = nb.load(os.path.join('/mnt/BPM_NAS/simulations', patient_image_name, 'static', 'img.nii.gz')).get_fdata()
-    
-#     for random_i in range(1,4):
-#         folder = os.path.join('/mnt/BPM_NAS/simulations', patient_image_name, 'sim_'+str(random_i))
-#         simulated_img = nb.load(os.path.join(folder, 'img.nii.gz'))
-#         affine = simulated_img.affine
-#         simulated_img = simulated_img.get_fdata()
-#         ROI = nb.load(os.path.join(folder, 'ROI.nii.gz')).get_fdata()
-#         print(np.unique(ROI))
-
-#         # Check if every value in ROI is 1
-#         if np.all(ROI == 1):
-#             print("Every value in ROI is 1")
-#         else:
-#             print("Not every value in ROI is 1, then smooth this ROI")
-#             ROI_copy = np.copy(ROI)
-#             smooth_ROI = cv2.GaussianBlur(ROI_copy.astype(float), (51,51), 10)
-#             final_img_roi_smooth = simulated_img * smooth_ROI + img * (1 - smooth_ROI)
-        
-#         simulated_img[original_img<=0] = original_img[original_img<=0]
-#         simulated_img = np.round(simulated_img)
-#         nb.save(nb.Nifti1Image(simulated_img, affine), os.path.join(folder, 'img_corrected.nii.gz'))
-            
-            
-
-
-
-       
-    
-
-    
-
-
-
-
-      
-
-        
+# df = pd.DataFrame(result, columns = ['Image', 'Blur_in_original_image', 'Agree', 'PoorQuality', 'AdjuDisagree', 'Folder', 'MRN', 'SegFilename', 'Dataset'])
+# df.to_excel(os.path.join(os.path.dirname(save_folder), 'blur_info.xlsx'), index = False)
